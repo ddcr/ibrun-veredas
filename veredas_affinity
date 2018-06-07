@@ -1,0 +1,93 @@
+#!/bin/bash -l
+#
+# wrapper script
+#
+
+# first disable affinity from any MPI stack we're using
+#
+export MV2_ENABLE_AFFINITY=0
+export MV2_USE_AFFINITY=0
+export I_MPI_PIN=0
+export KMP_AFFINITY=0
+
+# grab the global MPI rank task from any MPI stack we are using 
+#
+GLOBALRANK=$(( ${PMI_RANK-0} + ${PMI_ID-0} + ${OMPI_COMM_WORLD_RANK-0} ))
+LOCAL_HOST=`hostname -s`
+
+if [ ! -z "$NODE_TASKS_PPN_INFO" ]; then
+    # ddcr: remove beginning and ending double quotes
+    #
+    NODE_TASKS_PPN_INFO=`echo $NODE_TASKS_PPN_INFO | sed "s/\"//g"`
+    # ddcr: remove character separation
+    #
+    NODE_TASKS_PPN_INFO=`echo $NODE_TASKS_PPN_INFO | sed -e 's/_/ /g'`
+    for cluster in $NODE_TASKS_PPN_INFO; do
+	way=`echo $cluster | awk -F ',' '{print $1}'`
+	task_cutoff=`echo $cluster | awk -F ',' '{print $2}'`
+	if [ ${GLOBALRANK} -ge ${task_cutoff} ]; then
+	    local_way=$way
+	    local_task_cutoff=${task_cutoff}
+	fi
+    done
+fi
+
+# determine the local rank of the global MPI task on this node
+#
+LOCALRANK=$(( (${GLOBALRANK-${local_task_cutoff}})%${local_way} ))
+
+#----------------------------------------------------------------------------------------
+#
+# tpp = #threads per MPI process (default: no OMP_NUM_THREADS [1])
+#
+local_tpp=1
+if [ ! -z "$OMP_NUM_THREADS" ]; then
+    local_tpp=`echo $OMP_NUM_THREADS`
+fi
+#----------------------------------------------------------------------------------------
+
+
+if [ ! -z "$NODE_TASKS_PPN_INFO" ]; then
+    std_print "[${LOCAL_HOST}: wayness=${local_way} / #thrs per MPI = ${local_tpp}] GLOBALRANK($GLOBALRANK) -> LOCALRANK($LOCALRANK) "
+else
+    std_print "[${LOCAL_HOST}:] NODE_TASKS_PPN_INFO not available. Cannot determine local MPI rank"
+    exit 1
+fi
+
+likwid_pin=`which /usr/local/ohpc/pub/apps/gnu/likwid/4.3.1/bin/likwid-pin 2> /dev/null`
+if [ $? -ne 0 ]; then
+    err_print "Cannot find likwid-pin tool:"
+    err_print "Execute: module load likwid"
+    exit 1
+fi
+
+#
+# based on "wayness" of the local node determine its socket layout
+#
+# 1 MPI per node (way=1): 1 processor per node          (SLURM setting: CPUS_PER_TASK=8)
+# 2 MPI per node (way=2): 1 processor per socket        (SLURM setting: CPUS_PER_TASK=4)
+# 3 MPI per node (way=3)  1 processor per L2 cache line (SLURM setting: CPUS_PER_TASK=2)
+# 4 MPI per node (way=4)  1 processor per L2 cache line (SLURM setting: CPUS_PER_TASK=2)
+
+if [ "$local_way" -eq 1 ]; then
+    $likwid_pin -q -s 0x3 -c N:0-$(( local_tpp -1 )) $*
+elif [ "$local_way" -eq 2 ]; then
+    if [ "$LOCALRANK" -eq 0 ]; then
+ 	$likwid_pin -q -s 0x3 -c S0:0-$(( local_tpp -1 )) $*
+    elif [ "$LOCALRANK" -eq 1 ]; then
+ 	$likwid_pin -q -s 0x3 -c S1:0-$(( local_tpp -1 )) $*
+    fi
+elif [ "$local_way" -eq 3 -o "$local_way" -eq 4 ]; then
+    if [ "$LOCALRANK" -eq 0 ]; then
+ 	$likwid_pin -q -s 0x3 -c C0:0-$(( local_tpp - 1 )) $*
+    elif [ "$LOCALRANK" -eq 1 ]; then
+ 	$likwid_pin -q -s 0x3 -c C1:0-$(( local_tpp - 1 )) $*
+    elif [ "$LOCALRANK" -eq 2 ]; then
+ 	$likwid_pin -q -s 0x3 -c C2:0-$(( local_tpp - 1 )) $*
+    elif [ "$LOCALRANK" -eq 3 ]; then
+ 	$likwid_pin -q -s 0x3 -c C3:0-$(( local_tpp - 1 )) $*
+    fi
+else
+    echo "oversubscription"
+    exit 1
+fi
