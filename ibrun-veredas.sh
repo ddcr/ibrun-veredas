@@ -28,10 +28,6 @@ function err_print {
     echo -e "ERROR: $@" 1>&2
 }
 
-export debug_print
-export std_print
-export err_print
-
 function usage {
     echo "----------------------------------------------------------------------------------"
     echo "A wrapper script to launch MPI jobs from an                                       "
@@ -178,7 +174,7 @@ strip_eq() {
 }
 
 np_opt=
-MPI_MODE="$VEREDAS_MPI_DEFAULT"
+export MPI_MODE="$VEREDAS_MPI_DEFAULT"
 
 while [ $# -gt 0 ]; do
     arg="$1"

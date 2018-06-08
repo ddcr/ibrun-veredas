@@ -3,6 +3,14 @@
 # wrapper script
 #
 
+function affinity_print {
+    echo -e "AFFINITY - ${FUNCNAME} $@"
+}
+
+function err_print {
+    echo -e "ERROR: $@" 1>&2
+}
+
 # first disable affinity from any MPI stack we're using
 #
 export MV2_ENABLE_AFFINITY=0
@@ -48,9 +56,9 @@ fi
 
 
 if [ ! -z "$NODE_TASKS_PPN_INFO" ]; then
-    std_print "[${LOCAL_HOST}: wayness=${local_way} / #thrs per MPI = ${local_tpp}] GLOBALRANK($GLOBALRANK) -> LOCALRANK($LOCALRANK) "
+    affinity_print "[${LOCAL_HOST}: wayness=${local_way} / #thrs per MPI = ${local_tpp}] GLOBALRANK($GLOBALRANK) -> LOCALRANK($LOCALRANK) "
 else
-    std_print "[${LOCAL_HOST}:] NODE_TASKS_PPN_INFO not available. Cannot determine local MPI rank"
+    affinity_print "[${LOCAL_HOST}:] NODE_TASKS_PPN_INFO not available. Cannot determine local MPI rank"
     exit 1
 fi
 
@@ -69,25 +77,36 @@ fi
 # 3 MPI per node (way=3)  1 processor per L2 cache line (SLURM setting: CPUS_PER_TASK=2)
 # 4 MPI per node (way=4)  1 processor per L2 cache line (SLURM setting: CPUS_PER_TASK=2)
 
+#
+# MVAPICH2 needs confirmation
+#
+if [ x"$MPI_MODE" == "ximpi_hydra" ]; then
+    SKIPSTR=0x3
+elif [ x"$MPI_MODE" == "xmvapich2_slurm" ]; then
+    SKIPSTR=0x7
+elif [ x"$MPI_MODE" == "xmvapich2_ssh" ]; then
+    SKIPSTR=0x7
+fi
+
 if [ "$local_way" -eq 1 ]; then
-    $likwid_pin -q -s 0x3 -c N:0-$(( local_tpp -1 )) $*
+    $likwid_pin -q -s $SKIPSTR -c N:0-$(( local_tpp -1 )) $*
 elif [ "$local_way" -eq 2 ]; then
     if [ "$LOCALRANK" -eq 0 ]; then
- 	$likwid_pin -q -s 0x3 -c S0:0-$(( local_tpp -1 )) $*
+ 	$likwid_pin -q -s $SKIPSTR -c S0:0-$(( local_tpp -1 )) $*
     elif [ "$LOCALRANK" -eq 1 ]; then
- 	$likwid_pin -q -s 0x3 -c S1:0-$(( local_tpp -1 )) $*
+ 	$likwid_pin -q -s $SKIPSTR -c S1:0-$(( local_tpp -1 )) $*
     fi
 elif [ "$local_way" -eq 3 -o "$local_way" -eq 4 ]; then
     if [ "$LOCALRANK" -eq 0 ]; then
- 	$likwid_pin -q -s 0x3 -c C0:0-$(( local_tpp - 1 )) $*
+ 	$likwid_pin -q -s $SKIPSTR -c C0:0-$(( local_tpp - 1 )) $*
     elif [ "$LOCALRANK" -eq 1 ]; then
- 	$likwid_pin -q -s 0x3 -c C1:0-$(( local_tpp - 1 )) $*
+ 	$likwid_pin -q -s $SKIPSTR -c C1:0-$(( local_tpp - 1 )) $*
     elif [ "$LOCALRANK" -eq 2 ]; then
- 	$likwid_pin -q -s 0x3 -c C2:0-$(( local_tpp - 1 )) $*
+ 	$likwid_pin -q -s $SKIPSTR -c C2:0-$(( local_tpp - 1 )) $*
     elif [ "$LOCALRANK" -eq 3 ]; then
- 	$likwid_pin -q -s 0x3 -c C3:0-$(( local_tpp - 1 )) $*
+ 	$likwid_pin -q -s $SKIPSTR -c C3:0-$(( local_tpp - 1 )) $*
     fi
 else
-    echo "oversubscription"
+    echo "This configuration leads to core oversubscription"
     exit 1
 fi

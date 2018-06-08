@@ -15,9 +15,13 @@ CPUS_PER_TASK=2
 NTASKS_PER_NODE=
 NODES=
 
+#GROUP=eng772
+GROUP=testes
+PARTITION=short
+
 # ========== choose partition 'short' for testing 
 #!SALLOC_OPTS="-U eng772 -p long -t 5:00:00 -J NFF_Multipolos"
-SALLOC_OPTS="-U eng772 -p short -J NFF_Multipolos"
+SALLOC_OPTS="-U $GROUP -p $PARTITION -J NFF_Multipolos"
 
 SALLOC_OPTS="${SALLOC_OPTS} --ntasks=${NTASKS} --exclusive --cpu_bind=${CPU_BIND_OPT}"
 
