@@ -56,7 +56,7 @@ function emulate_slurm {
     SLURM_TASKS_PER_NODE="4(x3),9,3(x2),8(x6),5,8,8(x56)"
     SLURM_NODELIST="veredas[1-3,6,9-10,34-39,40,45,98-153]"
     SLURM_NPROCS=70
-    SLURM_JOBID=999
+    SLURM_JOB_ID=1
     std_print "============ TEST ENVIRONMENT ============"
     std_print "SLURM_TASKS_PER_NODE=$SLURM_TASKS_PER_NODE"
     std_print "SLURM_NODELIST      =$SLURM_NODELIST      "
@@ -108,12 +108,13 @@ debug_print "tps: HThreads per socket = 4"
 debug_print "tpn: HThreads per node   = 8"
 CPN=8
 
+
 if [ "$nlocal" == "veredas0" ]; then
     err_print "\t Do not run $0 on the login node"
     err_print "\t It must be called inside a batch script"
-#    exit 1
     std_print "Loading a SLURM environment example:"
     emulate_slurm
+    VEREDAS_EMULATE=1
 fi
 
 
@@ -184,7 +185,8 @@ while [ $# -gt 0 ]; do
     if [ -n "$arg" ]; then
         case "$arg" in
             -help | -h )
-		usage;;
+		usage;
+		exit 0;;
             -np | -n )
 		np_opt="-n $2"; shift ;;
             --mpi=* )
@@ -392,8 +394,12 @@ if [ x"$MPI_MODE" == "xmvapich2_ssh" ]; then
 
     launch_command="mpirun_rsh -ssh -np $MPI_NSLOTS -hostfile ${hostfile_veredas} $MY_MPIRUN_OPTIONS -export-all $fullcmd $@"
     debug_print "$MPI_MODE launch command:\n\t $launch_command"
-    mpirun_rsh -ssh -np $MPI_NSLOTS -hostfile ${hostfile_veredas} $MY_MPIRUN_OPTIONS -export-all $fullcmd "$@"
-    res=$?
+    if [ -z "$VEREDAS_EMULATE" ]; then
+	mpirun_rsh -ssh -np $MPI_NSLOTS -hostfile ${hostfile_veredas} $MY_MPIRUN_OPTIONS -export-all $fullcmd "$@"
+	res=$?
+    else
+	res=0
+    fi
 
 elif [ x"$MPI_MODE" == "xmvapich2_slurm" ]; then
 
@@ -404,8 +410,12 @@ elif [ x"$MPI_MODE" == "ximpi_hydra" ]; then
     
     launch_command="mpiexec.hydra -np $MPI_NSLOTS --machinefile ${hostfile_veredas} -print-rank-map $MY_MPIRUN_OPTIONS $fullcmd $@"
     debug_print "$MPI_MODE launch command:\n\t $launch_command"
-    mpiexec.hydra -np $MPI_NSLOTS --machinefile ${hostfile_veredas} -print-rank-map $MY_MPIRUN_OPTIONS $fullcmd "$@"
-    res=$?
+    if [ -z "$VEREDAS_EMULATE" ]; then
+	mpiexec.hydra -np $MPI_NSLOTS --machinefile ${hostfile_veredas} -print-rank-map $MY_MPIRUN_OPTIONS $fullcmd "$@"
+	res=$?
+    else
+	res=0
+    fi
 
 elif [ x"$MPI_MODE" == "xopenmpi" ]; then
 
@@ -417,15 +427,15 @@ elif [ x"$MPI_MODE" == "xVEREDAS_DBG_INTERNAL" ]; then
     # this is for internal debug purposes
     debug_print "$0 launched process with PID $$"
 
-#     # listing /proc/self gives us the PID of the ls that was ran from the shell
-#     # "exec /bin/ls" will not fork, but just replaces the shell.
-#     exec ls -l /proc/self
-#     # .. and so the following command does not run
-#     echo foo
-    
-#     # here things are different
-#     eval ls -l /proc/self
-#     echo foo
+    #     # listing /proc/self gives us the PID of the ls that was ran from the shell
+    #     # "exec /bin/ls" will not fork, but just replaces the shell.
+    #     exec ls -l /proc/self
+    #     # .. and so the following command does not run
+    #     echo foo
+        
+    #     # here things are different
+    #     eval ls -l /proc/self
+    #     echo foo
     
     res=0
 
@@ -440,9 +450,10 @@ if [ $res -ne 0 ]; then
     echo "MPI job exited with code: $res"
 fi
 
-if [ x"$VEREDAS_KEEP_FILES" == "xn" -or x"$VEREDAS_KEEP_FILES" == "xN" -or x"$VEREDAS_KEEP_FILES" == "x0" ]; then
-    if [ -f $veredas_hostfile ]; then
-	rm -f $veredas_hostfile
+if [ x"$VEREDAS_KEEP_FILES" == "xn" -o x"$VEREDAS_KEEP_FILES" == "xN" -o x"$VEREDAS_KEEP_FILES" == "x0" ]; then
+    if [ -f ${hostfile_veredas} ]; then
+	std_print "Removing Hostfile ${hostfile_veredas}"
+	rm -f ${hostfile_veredas}
     fi
 fi
 
