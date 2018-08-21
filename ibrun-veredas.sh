@@ -168,7 +168,7 @@ SLURM_NODELIST       = $SLURM_NODELIST
 SLURM_NPROCS         = $SLURM_NPROCS
 ============ FAKE SLURM ENVIRONMENT ============
 END_OF_EMUL
-  clear_color
+  [[ ! -z "$pretty" ]] && clear_color
   flush
 }
 
