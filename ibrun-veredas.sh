@@ -452,34 +452,36 @@ fi
 #     MVAPICH2 default environment variables
 #
 #------------------------------------------------
-[[ -z "$MV2_USE_UD_HYBRID" ]] && export MV2_USE_UD_HYBRID=0;
-# optimizing startup for homogeneous clusters
-[[ -z "$MV2_HOMOGENEOUS_CLUSTER" ]] && export MV2_HOMOGENEOUS_CLUSTER=1;
-export MV2_IBA_HCA=mthca0
-export MV2_SHOW_CPU_BINDING=1
-# Intra-node kernel assistance
-# Use LIMIC2 only for large messages.
-# The switch point can be set as 'export MV2_SMP_EAGERSIZE=<nbytes>'
-[[ -z "$MV2_SMP_USE_LIMIC2" ]] && export MV2_SMP_USE_LIMIC2=1;
-[[ -z "$MV2_SMP_USE_CMA" ]] && export MV2_SMP_USE_CMA=0;
-[[ -z "$GFORTRAN_UNBUFFERED_ALL" ]] && export GFORTRAN_UNBUFFERED_ALL=y;
+if [[ x"" == "xmvapich2_ssh" || x"" == "xmvapich2_slurm" ]]; then
+	[[ -z "$MV2_USE_UD_HYBRID" ]] && export MV2_USE_UD_HYBRID=0;
+	# optimizing startup for homogeneous clusters
+	[[ -z "$MV2_HOMOGENEOUS_CLUSTER" ]] && export MV2_HOMOGENEOUS_CLUSTER=1;
+	[[ -z "$MV2_DEFAULT_TIME_OUT" ]] && export MV2_DEFAULT_TIME_OUT=23
+	export MV2_IBA_HCA=mthca0
+	export MV2_SHOW_CPU_BINDING=1
+	# Intra-node kernel assistance
+	# Use LIMIC2 only for large messages.
+	# The switch point can be set as 'export MV2_SMP_EAGERSIZE=<nbytes>'
+	[[ -z "$MV2_SMP_USE_LIMIC2" ]] && export MV2_SMP_USE_LIMIC2=1;
+	[[ -z "$MV2_SMP_USE_CMA" ]] && export MV2_SMP_USE_CMA=0;
+	[[ -z "$GFORTRAN_UNBUFFERED_ALL" ]] && export GFORTRAN_UNBUFFERED_ALL=y;
 
-# export MV2_USE_RING_STARTUP=0 # if mpirun_rsh is used
-# export MV2_USE_RING_STARTUP=1 # used otherwise
-# export MV2_FASTSSH_THRESHOLD=50 # not need. the cluster is not that big
-# export MV2_NPROCS_THRESHOLD=
+	export MV2_USE_RING_STARTUP=0 # if mpirun_rsh is used
+	# export MV2_USE_RING_STARTUP=1 # used otherwise
+	# export MV2_FASTSSH_THRESHOLD=50 # not need. the cluster is not that big
+	# export MV2_NPROCS_THRESHOLD=
 
-# prefer MVAPICH2 automatic binding??
-# export MV2_CPU_BINDING_POLICY=bunch|scatter       [default=bunch]
-# export MV2_CPU_BINDING_LEVEL=core|socket|numanode [default=core]
-# export MV2_ENABLE_AFFINITY=1                      [default=1]
+	# prefer MVAPICH2 automatic binding??
+	# export MV2_CPU_BINDING_POLICY=bunch|scatter       [default=bunch]
+	# export MV2_CPU_BINDING_LEVEL=core|socket|numanode [default=core]
+	# export MV2_ENABLE_AFFINITY=1                      [default=1]
 
-# Starting from version 2.3 mvapich3 provides explicit
-# support for hybrid programming MPI+OpenMP
-#
-# [[ -z "$MV2_CPU_BINDING_POLICY" ]] && export MV2_CPU_BINDING_POLICY=hybrid;
-# [[ x"$MV2_CPU_BINDING_POLICY" == "xhybrid" ]] && export MV2_HYBRID_BINDING_POLICY=spread;
-# [[ -z "$MV2_THREADS_PER_PROCESS" ]] && export MV2_THREADS_PER_PROCESS=$(( CPN/task_count ));
+	# Starting from version 2.3 mvapich3 provides explicit
+	# support for hybrid programming MPI+OpenMP
+	# [[ -z "$MV2_CPU_BINDING_POLICY" ]] && export MV2_CPU_BINDING_POLICY=hybrid;
+	# [[ x"$MV2_CPU_BINDING_POLICY" == "xhybrid" ]] && export MV2_HYBRID_BINDING_POLICY=spread;
+	# [[ -z "$MV2_THREADS_PER_PROCESS" ]] && export MV2_THREADS_PER_PROCESS=$(( CPN/task_count ));
+fi
 
 
 #------------------------------------------------
@@ -487,8 +489,10 @@ export MV2_SHOW_CPU_BINDING=1
 #    Intel MPI default environment variables
 #
 #------------------------------------------------
-[[ -z "$I_MPI_DEBUG" ]] && export I_MPI_DEBUG=4;
-[[ -z "$I_MPI_FABRICS" ]] && export I_MPI_FABRICS=dapl;
+if [ x"$MPI_MODE" == "ximpi_hydra" ]; then
+	[[ -z "$I_MPI_DEBUG" ]] && export I_MPI_DEBUG=4;
+	[[ -z "$I_MPI_FABRICS" ]] && export I_MPI_FABRICS=dapl;
+fi
 
 
 #----------------------------------------------------------------------------------------

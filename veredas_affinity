@@ -18,7 +18,7 @@ export MV2_USE_AFFINITY=0
 export I_MPI_PIN=0
 export KMP_AFFINITY=0
 
-# grab the global MPI rank task from any MPI stack we are using 
+# grab the global MPI rank task from any MPI stack we are using
 #
 GLOBALRANK=$(( ${PMI_RANK-0} + ${PMI_ID-0} + ${OMPI_COMM_WORLD_RANK-0} ))
 LOCAL_HOST=`hostname -s`
@@ -64,7 +64,7 @@ fi
 
 #
 # make sure likwid module is loaded
-# UPDATE: I cannot use 'module load likwid', because the scritp 
+# UPDATE: I cannot use 'module load likwid', because the scritp
 # ibrun-veredas.sh unsets the command module (see explanation in
 # the script)
 
