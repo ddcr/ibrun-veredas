@@ -460,7 +460,8 @@ export MV2_SHOW_CPU_BINDING=1
 # Intra-node kernel assistance
 # Use LIMIC2 only for large messages.
 # The switch point can be set as 'export MV2_SMP_EAGERSIZE=<nbytes>'
-[[ -z "$MV2_SMP_USE_LIMIC2" ]] && export MV2_SMP_USE_LIMIC2=0;
+[[ -z "$MV2_SMP_USE_LIMIC2" ]] && export MV2_SMP_USE_LIMIC2=1;
+[[ -z "$MV2_SMP_USE_CMA" ]] && export MV2_SMP_USE_CMA=0;
 [[ -z "$GFORTRAN_UNBUFFERED_ALL" ]] && export GFORTRAN_UNBUFFERED_ALL=y;
 
 # export MV2_USE_RING_STARTUP=0 # if mpirun_rsh is used
