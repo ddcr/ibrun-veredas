@@ -89,6 +89,13 @@ err_report() {
 }
 trap 'err_report: $LINENO' ERR
 
+check_parallel_launcher() {
+	if [ ! $(type -P "$1") ]; then
+		err_print "Cannot find launcher $1 (maybe forgot to load its modulefile)"
+		exit 1;
+	fi
+}
+
 short_usage() {
   local cmd="${0##*/}"
   local line
@@ -247,7 +254,8 @@ while [ $# -gt 0 ]; do
                                 x"$ret" == "xmvapich2_slurm" || \
                                 x"$ret" == "ximpi_hydra" || \
                                 x"$ret" == "xopenmpi" ]]; then
-                            MPI_MODE=$ret
+                            check_parallel_launcher $ret;
+                            MPI_MODE=$ret;
                           else
                             abort "MPI stack '$ret' not wrapped ..."
                           fi
