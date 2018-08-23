@@ -22,8 +22,8 @@ Group:     %{PROJ_NAME}/admin
 BuildArch: noarch
 URL:       https://github.com/ddcr/ibrun-veredas
 Source0:   {{{ git_dir_pack }}}
-Source1:   OHPC_macros
-Source2:   LICENSE
+Source1:   LICENSE
+# Source2:   OHPC_macros
 
 BuildRoot: %{_tmppath}/%{pname}-%{version}-%{release}-root
 DocDir:    %{OHPC_PUB}/doc/contrib
@@ -35,7 +35,6 @@ DocDir:    %{OHPC_PUB}/doc/contrib
 %prep
 {{{ git_dir_setup_macro }}}
 %{__cp} %SOURCE1 .
-%{__cp} %SOURCE2 .
 
 %build
 # Binary pass-through - empty build section
