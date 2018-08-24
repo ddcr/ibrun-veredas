@@ -12,13 +12,17 @@ set -e
 
 export IBRUN_VEREDAS_VERSION='1.1.0'
 
+if [ "x$IBRUN_DIR" == "x" ]; then
+  IBRUN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+fi
+
 function version() {
   local cmd="${0##*/}"
   printf '%s %s\n' "$cmd" "$IBRUN_VEREDAS_VERSION"
   exit 0
 }
 
-function debug_print {
+function debug_print() {
   if [ "$VEREDAS_IBRUN_DEBUG" == "1" ]; then
     [[ ! -z "$pretty" ]] && set_color 0 bold
     buffer '[%s]>> %s\n' "${FUNCNAME}" "$1"
@@ -27,14 +31,14 @@ function debug_print {
   fi
 }
 
-function std_print {
+function std_print() {
   [[ ! -z "$pretty" ]] && set_color 4
   buffer '[%s]>> %s\n' "${FUNCNAME}" "$1"
   [[ ! -z "$pretty" ]] && clear_color
   flush
 }
 
-function err_print {
+function err_print() {
   [[ ! -z "$pretty" ]] && set_color 1
   buffer 'ERROR: %s\n' "$1" 1>&2
   [[ ! -z "$pretty" ]] && clear_color
@@ -124,24 +128,36 @@ Usage: $cmd [-np|--ntasks] <value> --mpi=<name> [<opt-affinity-script>] <my_mpie
        $cmd [-V|--version]
        $cmd [-v|--verbose]
 
-  A wrapper script to launch MPI jobs (do not use it for serial jobs) inside
-  the SLURM environment.
+  A wrapper utility to launch MPI tasks in SLURM jobs.
+  DO NOT use for serial jobs.
 
-  <my_mpiexe> is the path to the MPI executable compiled by the user.
-  [<optional-affinity-script>] optional script (bash/perl/...) that imposes
-                    CPU affinity's binding policy for each task, i.e., it
-                    manages MPI task placement and pinning to physical cores.
-                    This is most useful for hybrid MPI+OpenMP/threads jobs.
-                    In this __ADVANCED__ usage, the script [<opt-affinity-script>]
-                    should be placed before the command <mpiexe>, so that the
-                    output of $cmd is piped through it.
+
+  <name>
+                MPI stack [impi_hydra|mvapich2_ssh|mvapich2_slum|openmpi]
+  <my_mpiexe>
+                is the path to the MPI executable compiled by the user
+                followed by any accepted arguments.
+
+  <optional-affinity-script>
+                external file script (bash) that enables MPI tasks/OpenMP threads
+                binding to logical/physical cores. More specifically this
+                script should use either of the system tools hwloc or likwid,
+                to manage task placement and pinning to a single core or groups of
+                physical cores. This script is most useful for hybrid
+                MPI+OpenMP/threads jobs and normally is considered advanced
+                usage. It should be placed before the program <mpiexe> (see
+                usage above), so that the output of $cmd is
+                piped through it. The user can provide his own script or use
+                the script located in
+                $IBRUN_DIR/veredas_affinity
+
 
   Most common usage of this script is something like this:
     $cmd <my_mpiexe> [arg1] [arg2] ...
 
 Options:
   -np, --ntasks <value>  Enforce total number of tasks
-       --mpi=<name>      Specify MPI stack to be used [default: $MPI_MODE ]
+       --mpi=<name>      Specify MPI stack to be used [default: $MPI_MODE]
   -h,  --help            Display this help message
   -n,  --dryrun          Do everything except launch the application
   -V,  --version         Display the version number
@@ -201,11 +217,12 @@ unset module
 
 function load_defaults {
   if [ -z "$IBRUN_FILE_DEFAULTS" ]; then
-    IBRUN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     if [ -s $IBRUN_DIR/ibrun.defaults ]; then
       export IBRUN_FILE_DEFAULTS=$IBRUN_DIR/ibrun.defaults
     elif [ -s /usr/local/bin/ibrun.defaults ]; then
       export IBRUN_FILE_DEFAULTS=/usr/local/bin/ibrun.defaults
+    elif [ -s $HOME/ibrun.defaults ]; then
+      export IBRUN_FILE_DEFAULTS=$HOME/ibrun.defaults
     else
       std_print "Warning IBRUN defaults not loaded"
     fi
