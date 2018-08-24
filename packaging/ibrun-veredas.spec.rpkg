@@ -11,19 +11,19 @@
 %include %{_sourcedir}/OHPC_macros
 %{!?PROJ_DELIM: %global PROJ_DELIM -ohpc}
 
-%define pname {{{ git_dir_name }}}
+%define pname {{{ git_name }}}
 
 Summary:   Wrapper utility for parallel job launch in cluster veredas (LCC-CENAPAD/MG)
 Name:      %{pname}%{PROJ_DELIM}
-Version:   {{{ git_dir_version }}}
+Version:   {{{ git_version }}}
 Release:   1
 License:   BSD
 Group:     %{PROJ_NAME}/admin
 BuildArch: noarch
 URL:       https://github.com/ddcr/ibrun-veredas
-Source0:   {{{ git_dir_pack }}}
-Source1:   LICENSE
-# Source2:   OHPC_macros
+Source0:   {{{ git_pack }}}
+Source1:   OHPC_macros
+Source2:   LICENSE
 
 BuildRoot: %{_tmppath}/%{pname}-%{version}-%{release}-root
 DocDir:    %{OHPC_PUB}/doc/contrib
@@ -33,8 +33,8 @@ DocDir:    %{OHPC_PUB}/doc/contrib
 %description
 
 %prep
-{{{ git_dir_setup_macro }}}
-%{__cp} %SOURCE1 .
+{{{ git_setup_macro }}}
+%{__cp} %SOURCE2 .
 
 %build
 # Binary pass-through - empty build section
@@ -44,7 +44,9 @@ DocDir:    %{OHPC_PUB}/doc/contrib
 rm -rf $RPM_BUILD_ROOT
 
 %{__mkdir} -p %{buildroot}/%{package_target}
-install -D -m 0755 %SOURCE0 %{buildroot}/%{package_target}
+install -D -m 0755 ibrun-veredas.sh %{buildroot}/%{package_target}
+install -D -m 0755 veredas_affinity %{buildroot}/%{package_target}
+install -D -m 0644 ibrun.defaults   %{buildroot}/%{package_target}
 
 # OpenHPC modulefile
 
@@ -90,8 +92,8 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %dir %{OHPC_HOME}
-%doc LICENSE
+%doc LICENSE README.md
 %{OHPC_HOME}
 
 %changelog
-{{{ git_dir_changelog }}}
+{{{ git_changelog }}}
