@@ -271,7 +271,6 @@ while [ $# -gt 0 ]; do
                                 x"$ret" == "xmvapich2_slurm" || \
                                 x"$ret" == "ximpi_hydra" || \
                                 x"$ret" == "xopenmpi" ]]; then
-                            check_parallel_launcher $ret;
                             MPI_MODE=$ret;
                           else
                             abort "MPI stack '$ret' not wrapped ..."
@@ -340,9 +339,11 @@ std_print "#MPI tasks = $MPI_NSLOTS"
 # to their full path
 fullcmd=
 for arg in "$@"; do
-  if [[ -f $arg ]]; then
+  if [[ -x $arg ]]; then
     cmd_fullpath=`which $arg 2>/dev/null`
     [[ $? -ne 0 ]] && cmd_fullpath="$arg"
+  elif [[ -f $arg ]]; then
+    cmd_fullpath=$(readlink -m $arg)
   else
     cmd_fullpath="$arg"
   fi
@@ -527,6 +528,7 @@ fi
 #----------------------------------------------------------------------------------------
 if [ x"$MPI_MODE" == "xmvapich2_ssh" ]; then
   launch_command="mpirun_rsh -ssh -np $MPI_NSLOTS -hostfile ${hostfile_veredas} $MY_MPIRUN_OPTIONS -export-all $fullcmd"
+  check_parallel_launcher mpirun_rsh
   std_print "$MPI_MODE launch command:"
   std_print "          $launch_command"
   if [ "$dry_run" -eq "0" ]; then
@@ -540,6 +542,7 @@ elif [ x"$MPI_MODE" == "xmvapich2_slurm" ]; then
   res=1
 elif [ x"$MPI_MODE" == "ximpi_hydra" ]; then
   launch_command="mpiexec.hydra -np $MPI_NSLOTS --machinefile ${hostfile_veredas} -print-rank-map $MY_MPIRUN_OPTIONS $fullcmd"
+  check_parallel_launcher mpiexec.hydra
   std_print "$MPI_MODE launch command:"
   std_print "          $launch_command"
   if [ "$dry_run" -eq "0" ]; then

@@ -1,4 +1,5 @@
 RPM_SOURCEDIR := $(shell echo "`rpm --eval '%{_sourcedir}'`")
+RPM_SRCRPMDIR := $(shell echo "`rpm --eval '%{_srcrpmdir}'`")
 
 .PHONY: clean srpm
 
@@ -10,10 +11,10 @@ $(RPM_SOURCEDIR)/OHPC_macros: OHPC_macros
 
 
 srpm:
-	rpkg srpm --target noarch --outdir $(PWD)
+	rpkg srpm --target noarch --outdir=$(RPM_SRCRPMDIR)
 
 $(RPM_SOURCEDIR)/%:
 	cp -f $< $@
 
 clean:
-	@rm *.tar.gz *.src.rpm *.spec
+	@rm $(RPM_SRCRPMDIR)/ibrun*
