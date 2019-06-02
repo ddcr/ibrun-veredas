@@ -94,23 +94,46 @@ elif [ x"$MPI_MODE" == "xmvapich2_ssh" ]; then
     SKIPSTR=0x7
 fi
 
+#
+# Node domain
+#
 if [ "$local_way" -eq 1 ]; then
+    # exec $likwid_pin -q -s $SKIPSTR -c N:0-$(( local_tpp -1 )) $*
+    echo "[${LOCAL_HOST}] $likwid_pin -q -s $SKIPSTR -c N:0-$(( local_tpp -1 )) $*"
     exec $likwid_pin -q -s $SKIPSTR -c N:0-$(( local_tpp -1 )) $*
+#
+# Socket domain
+#
 elif [ "$local_way" -eq 2 ]; then
     if [ "$LOCALRANK" -eq 0 ]; then
-        exec $likwid_pin -q -s $SKIPSTR -c S0:0-$(( local_tpp -1 )) $*
+        # exec $likwid_pin -q -s $SKIPSTR -c S0:0-$(( local_tpp -1 )) $*
+        echo "[${LOCAL_HOST}] $likwid_pin -s $SKIPSTR -c S0:0-$(( local_tpp -1 )) $*"
+        exec $likwid_pin -s $SKIPSTR -c S0:0-$(( local_tpp -1 )) $*
     elif [ "$LOCALRANK" -eq 1 ]; then
-        exec $likwid_pin -q -s $SKIPSTR -c S1:0-$(( local_tpp -1 )) $*
+        # exec $likwid_pin -q -s $SKIPSTR -c S1:0-$(( local_tpp -1 )) $*
+        echo "[${LOCAL_HOST}] $likwid_pin -s $SKIPSTR -c S1:0-$(( local_tpp -1 )) $*"
+        exec $likwid_pin -s $SKIPSTR -c S1:0-$(( local_tpp -1 )) $*
     fi
+#
+# Cache domain
+#
 elif [ "$local_way" -eq 3 -o "$local_way" -eq 4 ]; then
     if [ "$LOCALRANK" -eq 0 ]; then
-        exec $likwid_pin -q -s $SKIPSTR -c C0:0-$(( local_tpp - 1 )) $*
+        # exec $likwid_pin -q -s $SKIPSTR -c C0:0-$(( local_tpp - 1 )) $*
+        echo "[${LOCAL_HOST}] $likwid_pin -q -s $SKIPSTR -c C0:0-$(( local_tpp - 1 )) $*"
+        exec $likwid_pin -s $SKIPSTR -V 3 -c C0:0-$(( local_tpp - 1 )) $*
     elif [ "$LOCALRANK" -eq 1 ]; then
-        exec $likwid_pin -q -s $SKIPSTR -c C1:0-$(( local_tpp - 1 )) $*
+        # exec $likwid_pin -q -s $SKIPSTR -c C1:0-$(( local_tpp - 1 )) $*
+        echo "[${LOCAL_HOST}] $likwid_pin -q -s $SKIPSTR -c C1:0-$(( local_tpp - 1 )) $*"
+        exec $likwid_pin -s $SKIPSTR -V 3 -c C1:0-$(( local_tpp - 1 )) $*
     elif [ "$LOCALRANK" -eq 2 ]; then
-        exec $likwid_pin -q -s $SKIPSTR -c C2:0-$(( local_tpp - 1 )) $*
+        # exec $likwid_pin -q -s $SKIPSTR -c C2:0-$(( local_tpp - 1 )) $*
+        echo "[${LOCAL_HOST}] $likwid_pin -q -s $SKIPSTR -c C2:0-$(( local_tpp - 1 )) $*"
+        exec $likwid_pin -s $SKIPSTR -V 3 -c C2:0-$(( local_tpp - 1 )) $*
     elif [ "$LOCALRANK" -eq 3 ]; then
-        exec $likwid_pin -q -s $SKIPSTR -c C3:0-$(( local_tpp - 1 )) $*
+        # exec $likwid_pin -q -s $SKIPSTR -c C3:0-$(( local_tpp - 1 )) $*
+        echo "[${LOCAL_HOST}] $likwid_pin -q -s $SKIPSTR -c C3:0-$(( local_tpp - 1 )) $*"
+        exec $likwid_pin -s $SKIPSTR -V 3 -c C3:0-$(( local_tpp - 1 )) $*
     fi
 else
     echo "This configuration leads to core oversubscription"
